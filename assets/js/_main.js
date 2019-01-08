@@ -56,13 +56,19 @@ $(document).ready(function() {
   // Smooth scrolling
 
   // Bind popstate event listener to support back/forward buttons.
-  var smoothScrolling = false;
+  var smoothScrolling = false, smoothTimeout;
   $(window).bind("popstate", function (event) {
     $.smoothScroll({
       scrollTarget: location.hash,
       offset: -20,
-      beforeScroll: function() { smoothScrolling = true; },
-      afterScroll: function() { smoothScrolling = false; }
+      beforeScroll: function() {
+        clearTimeout(smoothTimeout);
+        smoothScrolling = true;
+      },
+      afterScroll: function() {
+        // Add slight delay to allow scroll event to fire.
+        smoothTimeout = setTimeout(function() { smoothScrolling = false; }, 100);
+      }
     });
   });
   // Override clicking on links to smooth scroll
@@ -79,10 +85,8 @@ $(document).ready(function() {
   }
 
   // Scrollspy equivalent: update hash fragment while scrolling.
-  $(window).scroll(jQuery.throttle(250, function() {
-    // Don't run while smooth scrolling (from clicking on a link).
-    if (smoothScrolling) return;
-    var scrollTop = $(window).scrollTop() + 20;  // 20 = offset
+  var onScroll = jQuery.throttle(250, function() {
+    var scrollTop = $(window).scrollTop() + 20 + 1;  // 20 = offset
     var links = [];
     $("nav.toc a").each(function() {
       var link = $(this);
@@ -109,7 +113,12 @@ $(document).ready(function() {
         break;
       }
     }
-  }));
+  });
+  $(window).scroll(function () {
+    // Don't run while smooth scrolling (from clicking on a link).
+    if (smoothScrolling) return;
+    onScroll();
+  });
 
   // add lightbox class to all image links
   $(
